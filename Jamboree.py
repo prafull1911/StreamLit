@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-import datetime
 import pickle
+from sklearn.preprocessing import StandardScaler
 
+# Load the dataset
 df = pd.read_csv('./Jamboree_Admission.csv')
 
+# Display the dataframe
 st.write(
     """
     # Jamboree Candidate Data
@@ -14,33 +16,55 @@ st.write(
 
 st.dataframe(df.head())
 
-col1, col2, col3, col4 = st.columns(4)
-
 # Input fields in each column
+col1, col2, col3 = st.columns(3)
+
 with col1:
-    gre_score = st.number_input('GRE Score', format="%.2f")
+    uni_rating = st.number_input('University Rating', format="%.2f")
 
 with col2:
-    toefl_score = st.number_input('TOEFL Score', format="%.2f")
+    gre_score = st.number_input('GRE Score', format="%.2f")
 
 with col3:
-    cgpa = st.number_input('CGPA', format="%.2f")
+    toefl_score = st.number_input('TOEFL Score', format="%.2f")
+
+# Second row of input fields
+col4, col5, col6 = st.columns(3)
 
 with col4:
+    cgpa = st.number_input('CGPA', format="%.2f")
+
+with col5:
     research_exp = st.selectbox('Research Experience', [0, 1])
 
-total_score = (gre_score*10/340) + (toefl_score*10/120)
+with col6:
+    lor = st.number_input('Letter of Recommendation (LOR)', format="%.2f")
 
-# input_features = [4,cgpa,research_exp,total_score,6.5]
-def model_pred(cgpa,research_exp,total_score):
+# Third row for SOP
+sop = st.number_input('Statement of Purpose (SOP)', format="%.2f")
 
-    # loading the model
-    with open('LR_model','rb') as file:
+# Calculate the total score
+total_score = (gre_score * 10 / 340) + (toefl_score * 10 / 120)
+sop_lor = lor + sop
+
+# Prediction function
+def model_pred(uni_rating, cgpa, research_exp, total_score, sop_lor):
+    # Load the trained model
+    with open('LR_model', 'rb') as file:
         reg_model = pickle.load(file)
-        input_features = np.array([4,cgpa, research_exp, total_score,6.5])
-        input_features = input_features.reshape(1, -1)
-    return reg_model.predict(input_features)
-if st.button('Calculate Chances'):
-    chances = model_pred(cgpa,research_exp,total_score)
 
-    st.text(f'The Chances of Getting Admission in the IVY Leagues are {(chances[0]*100).round(2)}%')
+    # Input features
+    input_features = np.array([uni_rating, cgpa, research_exp, total_score, sop_lor]).reshape(1, -1)
+
+    # Standardize the input features (commented out for now)
+    # scaler = StandardScaler()
+    # input_features_standardized = scaler.fit_transform(input_features)
+
+    # Predict the chances of admission
+    return reg_model.predict(input_features)
+
+# Button to calculate chances of admission
+if st.button('Calculate Chances'):
+    chances = model_pred(uni_rating, cgpa, research_exp, total_score, sop_lor)
+    st.text(f'The Chances of Getting Admission in the IVY Leagues are {(chances[0] * 100).round(2)}%')
+
